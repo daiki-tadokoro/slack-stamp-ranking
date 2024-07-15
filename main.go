@@ -33,7 +33,7 @@ func main() {
 
 	// 全てのチャンネルのリストを取得
 	channels, _, err := api.GetConversations(&slack.GetConversationsParameters{
-		Limit: 1000,
+		Limit: 10,
 		Types: []string{"public_channel", "private_channel"},
 	})
 	if err != nil {

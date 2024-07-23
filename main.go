@@ -42,6 +42,16 @@ func main() {
 
 	emojiUsage := make(map[string]int)
 
+	// 各チャンネルにBotを追加
+	for _, channel := range channels {
+		_, _, _, err := api.JoinConversation(channel.ID)
+		if err != nil {
+			log.Printf("Error joining channel %s: %v", channel.Name, err)
+			continue
+		}
+		fmt.Printf("Joined channel: %s\n", channel.Name)
+	}
+
 	// 各チャンネルのメッセージを取得しスタンプの使用状況を集計
 	for _, channel := range channels {
 		historyParams := slack.GetConversationHistoryParameters{

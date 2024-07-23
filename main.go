@@ -33,7 +33,7 @@ func main() {
 
 	// 全てのチャンネルのリストを取得
 	channels, _, err := api.GetConversations(&slack.GetConversationsParameters{
-		Limit: 10,
+		Limit: 100,
 		Types: []string{"public_channel", "private_channel"},
 	})
 	if err != nil {
@@ -44,6 +44,12 @@ func main() {
 
 	// 各チャンネルにBotを追加
 	for _, channel := range channels {
+		// アーカイブされたチャンネルはスキップ
+		if channel.IsArchived {
+			log.Printf("Skipping archived channel: %s\n", channel.Name)
+			continue
+		}
+		// チャンネルにBotを追加
 		_, _, _, err := api.JoinConversation(channel.ID)
 		if err != nil {
 			log.Printf("Error joining channel %s: %v", channel.Name, err)
@@ -56,7 +62,7 @@ func main() {
 	for _, channel := range channels {
 		historyParams := slack.GetConversationHistoryParameters{
 			ChannelID: channel.ID,
-			Limit:     10,
+			Limit:     100,
 		}
 
 		history, err := api.GetConversationHistory(&historyParams)

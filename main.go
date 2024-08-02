@@ -24,6 +24,7 @@ func main() {
 	}
 
 	api := slack.New(slackToken)
+
 	// スコープを確認
 	authTest, err := api.AuthTest()
 	if err != nil {
@@ -33,7 +34,7 @@ func main() {
 
 	// 全てのチャンネルのリストを取得
 	channels, _, err := api.GetConversations(&slack.GetConversationsParameters{
-		Limit: 100,
+		Limit: 1000,
 		Types: []string{"public_channel", "private_channel"},
 	})
 	if err != nil {
@@ -44,22 +45,23 @@ func main() {
 
 	// 各チャンネルにBotを追加
 	for _, channel := range channels {
-		// アーカイブされたチャンネルはスキップ
 		if channel.IsArchived {
 			log.Printf("Skipping archived channel: %s\n", channel.Name)
 			continue
 		}
-		// チャンネルにBotを追加
+
+		// チャンネルに参加する
 		_, _, _, err := api.JoinConversation(channel.ID)
 		if err != nil {
 			log.Printf("Error joining channel %s: %v", channel.Name, err)
-			continue
+			// 既に参加しているか確認
+			if !isAlreadyInChannel(api, channel.ID) {
+				continue
+			}
 		}
 		fmt.Printf("Joined channel: %s\n", channel.Name)
-	}
 
-	// 各チャンネルのメッセージを取得しスタンプの使用状況を集計
-	for _, channel := range channels {
+		// 各チャンネルのメッセージを取得しスタンプの使用状況を集計
 		historyParams := slack.GetConversationHistoryParameters{
 			ChannelID: channel.ID,
 			Limit:     100,
@@ -95,4 +97,16 @@ func main() {
 	for i, emoji := range emojiList {
 		fmt.Printf("%d. %s: %d\n", i+1, emoji.Name, emoji.Count)
 	}
+}
+
+// チャンネルに既に参加しているかを確認するヘルパー関数
+func isAlreadyInChannel(api *slack.Client, channelID string) bool {
+	channelInfo, err := api.GetConversationInfo(&slack.GetConversationInfoInput{
+		ChannelID: channelID,
+	})
+	if err != nil {
+		log.Printf("Error getting conversation info for channel %s: %v", channelID, err)
+		return false
+	}
+	return channelInfo.IsMember
 }
